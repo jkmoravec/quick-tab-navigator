@@ -1,8 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import SearchEngineConfig from "@/components/SearchEngineConfig";
 import QuickLinksConfig from "@/components/QuickLinksConfig";
+import AutoComplete from "@/components/AutoComplete";
 
 interface SearchEngine {
   id: string;
@@ -32,7 +32,6 @@ const Index = () => {
   const [searchEngine, setSearchEngine] = useState("google");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // 默认搜索引擎
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>([
@@ -45,11 +44,6 @@ const Index = () => {
   // 自定义快速链接
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
 
-  // 自动聚焦地址栏
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
   // 判断是否为URL
   const isURL = (text: string) => {
     try {
@@ -60,24 +54,17 @@ const Index = () => {
     }
   };
 
-  // 处理回车键
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
   // 处理搜索/导航
-  const handleSearch = () => {
-    if (!query.trim()) return;
+  const handleSubmit = (value: string) => {
+    if (!value.trim()) return;
 
-    if (isURL(query)) {
-      const url = query.startsWith('http') ? query : `https://${query}`;
+    if (isURL(value)) {
+      const url = value.startsWith('http') ? value : `https://${value}`;
       window.open(url, '_blank');
     } else {
       const engine = searchEngines.find(e => e.id === searchEngine);
       if (engine) {
-        const searchUrl = engine.url + encodeURIComponent(query);
+        const searchUrl = engine.url + encodeURIComponent(value);
         window.open(searchUrl, '_blank');
       }
     }
@@ -107,19 +94,13 @@ const Index = () => {
       {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto">
         <div className="flex gap-3 mb-8">
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="输入网址..."
-              className="text-lg py-6 px-6 rounded-full bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 transition-colors"
-            />
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-          </div>
+          <AutoComplete
+            value={query}
+            onChange={setQuery}
+            onSubmit={handleSubmit}
+            placeholder="输入网址或搜索关键词..."
+            className="text-lg py-6 px-6 rounded-full bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 transition-colors"
+          />
           
           <Select value={searchEngine} onValueChange={setSearchEngine}>
             <SelectTrigger className="w-32 py-6 rounded-full bg-gray-800 border-gray-700 text-white">
@@ -135,7 +116,7 @@ const Index = () => {
           </Select>
           
           <Button 
-            onClick={handleSearch}
+            onClick={() => handleSubmit(query)}
             className="px-8 py-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
           >
             转到
