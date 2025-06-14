@@ -1,21 +1,49 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Globe, Settings } from "lucide-react";
+import { Search, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import SearchEngineConfig from "@/components/SearchEngineConfig";
+import QuickLinksConfig from "@/components/QuickLinksConfig";
+
+interface SearchEngine {
+  id: string;
+  name: string;
+  url: string;
+  isDefault?: boolean;
+}
+
+interface QuickLink {
+  id: string;
+  name: string;
+  url: string;
+  icon?: string;
+}
 
 const Index = () => {
   const [query, setQuery] = useState("");
   const [searchEngine, setSearchEngine] = useState("google");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const searchEngines = {
-    google: { name: "Google", url: "https://www.google.com/search?q=" },
-    bing: { name: "Bing", url: "https://www.bing.com/search?q=" },
-    baidu: { name: "百度", url: "https://www.baidu.com/s?wd=" },
-    duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" }
-  };
+  // 默认搜索引擎
+  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>([
+    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
+    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
+    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
+    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" }
+  ]);
+
+  // 自定义快速链接
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
 
   // 自动聚焦地址栏
   useEffect(() => {
@@ -44,116 +72,121 @@ const Index = () => {
     if (!query.trim()) return;
 
     if (isURL(query)) {
-      // 如果是URL，直接导航
       const url = query.startsWith('http') ? query : `https://${query}`;
       window.open(url, '_blank');
     } else {
-      // 如果是关键词，使用选定的搜索引擎
-      const searchUrl = searchEngines[searchEngine as keyof typeof searchEngines].url + encodeURIComponent(query);
-      window.open(searchUrl, '_blank');
+      const engine = searchEngines.find(e => e.id === searchEngine);
+      if (engine) {
+        const searchUrl = engine.url + encodeURIComponent(query);
+        window.open(searchUrl, '_blank');
+      }
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
-      {/* 顶部设置按钮 */}
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
+      {/* 设置按钮 */}
       <div className="absolute top-4 right-4">
-        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-800">
-          <Settings className="h-5 w-5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-200">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-white">
+            <DropdownMenuItem onClick={() => setShowSettings(true)}>
+              搜索引擎设置
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)}>
+              快速链接设置
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* 主内容区域 */}
+      {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto">
-        {/* Logo/标题区域 */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <Globe className="h-12 w-12 text-indigo-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-800">简洁地址栏</h1>
-          </div>
-          <p className="text-gray-600 text-lg">智能识别URL和关键词，快速导航到目标页面</p>
-        </div>
-
-        {/* 地址栏区域 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex gap-3 mb-4">
-            <div className="flex-1 relative">
-              <Input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="输入网址或搜索关键词..."
-                className="text-lg py-6 px-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 transition-colors"
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
+        <div className="flex gap-3 mb-8">
+          <div className="flex-1 relative">
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="输入网址..."
+              className="text-lg py-6 px-6 rounded-full bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 transition-colors"
+            />
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
-            
-            <Select value={searchEngine} onValueChange={setSearchEngine}>
-              <SelectTrigger className="w-32 py-6 rounded-xl border-2 border-gray-200">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(searchEngines).map(([key, engine]) => (
-                  <SelectItem key={key} value={key}>
-                    {engine.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              onClick={handleSearch}
-              className="px-8 py-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
-            >
-              前往
-            </Button>
           </div>
           
-          {/* 提示文字 */}
-          <div className="text-sm text-gray-500 text-center">
-            {query && (
-              isURL(query) 
-                ? `将导航到: ${query.startsWith('http') ? query : 'https://' + query}`
-                : `将在 ${searchEngines[searchEngine as keyof typeof searchEngines].name} 中搜索: ${query}`
-            )}
-          </div>
+          <Select value={searchEngine} onValueChange={setSearchEngine}>
+            <SelectTrigger className="w-32 py-6 rounded-full bg-gray-800 border-gray-700 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {searchEngines.map((engine) => (
+                <SelectItem key={engine.id} value={engine.id}>
+                  {engine.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            onClick={handleSearch}
+            className="px-8 py-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+          >
+            转到
+          </Button>
         </div>
 
-        {/* Quick Links 预留区域 */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">快速链接</h3>
+        {/* 快速链接区域 */}
+        {quickLinks.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { name: "GitHub", url: "https://github.com", icon: "💻" },
-              { name: "Gmail", url: "https://gmail.com", icon: "📧" },
-              { name: "YouTube", url: "https://youtube.com", icon: "📺" },
-              { name: "StackOverflow", url: "https://stackoverflow.com", icon: "📚" }
-            ].map((link) => (
+            {quickLinks.map((link) => (
               <Button
-                key={link.name}
-                variant="outline"
-                className="h-16 rounded-xl border-2 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                key={link.id}
+                variant="ghost"
+                className="h-16 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-700 text-white transition-colors"
                 onClick={() => window.open(link.url, '_blank')}
               >
                 <div className="text-center">
-                  <div className="text-2xl mb-1">{link.icon}</div>
+                  {link.icon && <div className="text-2xl mb-1">{link.icon}</div>}
                   <div className="text-sm font-medium">{link.name}</div>
                 </div>
               </Button>
             ))}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* 快捷键提示 */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 text-sm text-gray-600">
-          按 <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">Ctrl+M</kbd> 聚焦地址栏
+      {/* 设置弹窗 */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <SearchEngineConfig 
+              engines={searchEngines}
+              onEnginesChange={setSearchEngines}
+              onClose={() => setShowSettings(false)}
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 快速链接配置弹窗 */}
+      {showQuickLinksConfig && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <QuickLinksConfig 
+              links={quickLinks}
+              onLinksChange={setQuickLinks}
+              onClose={() => setShowQuickLinksConfig(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
