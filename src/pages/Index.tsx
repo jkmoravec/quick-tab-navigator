@@ -93,31 +93,21 @@ const Index = () => {
 
       {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        {/* 搜索栏 - 改为单一输入框样式 */}
-        <div className="w-full max-w-lg mb-8">
-          <div className="relative">
-            <AutoComplete
-              value={query}
-              onChange={setQuery}
-              onSubmit={handleSubmit}
-              placeholder="输入网址或搜索关键词..."
-              className="w-full text-lg py-3 px-4 pr-20 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
-            />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Button 
-                onClick={() => handleSubmit(query)}
-                size="sm"
-                className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
-              >
-                转到
-              </Button>
+        {/* 搜索栏 - 水平布局 */}
+        <div className="w-full mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <AutoComplete
+                value={query}
+                onChange={setQuery}
+                onSubmit={handleSubmit}
+                placeholder="输入网址或搜索关键词..."
+                className="w-full text-lg py-3 px-4 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+              />
             </div>
-          </div>
-          
-          {/* 搜索引擎选择器 - 移到下方 */}
-          <div className="flex justify-center mt-4">
+            
             <Select value={searchEngine} onValueChange={setSearchEngine}>
-              <SelectTrigger className="w-40 py-2 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
+              <SelectTrigger className="w-40 py-3 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -128,6 +118,13 @@ const Index = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            <Button 
+              onClick={() => handleSubmit(query)}
+              className="px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            >
+              转到
+            </Button>
           </div>
         </div>
 
