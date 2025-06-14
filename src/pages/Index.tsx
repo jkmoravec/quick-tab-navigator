@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,7 +92,7 @@ const Index = () => {
 
       {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        {/* 搜索栏 - 水平布局 */}
+        {/* 搜索栏 - 水平布局，统一高度 */}
         <div className="w-full mb-8">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative">
@@ -102,12 +101,12 @@ const Index = () => {
                 onChange={setQuery}
                 onSubmit={handleSubmit}
                 placeholder="输入网址或搜索关键词..."
-                className="w-full text-lg py-3 px-4 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full h-12 text-lg px-4 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             
             <Select value={searchEngine} onValueChange={setSearchEngine}>
-              <SelectTrigger className="w-40 py-3 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
+              <SelectTrigger className="w-40 h-12 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -121,7 +120,7 @@ const Index = () => {
 
             <Button 
               onClick={() => handleSubmit(query)}
-              className="px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="h-12 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
             >
               转到
             </Button>
