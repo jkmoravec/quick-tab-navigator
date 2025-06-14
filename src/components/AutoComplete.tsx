@@ -22,6 +22,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [originalValue, setOriginalValue] = useState("");
+  const [isBackspacing, setIsBackspacing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -91,16 +92,19 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
       
-      updateInlineSuggestion(query, allSuggestions);
+      // 只有在不是backspace操作时才进行内联补全
+      if (!isBackspacing) {
+        updateInlineSuggestion(query, allSuggestions);
+      }
     } catch (error) {
       console.error('获取建议失败:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [searchHistory, searchBookmarks]);
+  }, [searchHistory, searchBookmarks, isBackspacing]);
 
   const updateInlineSuggestion = useCallback((query: string, suggestions: SuggestionItem[]) => {
-    if (!suggestions.length || !inputRef.current) return;
+    if (!suggestions.length || !inputRef.current || isBackspacing) return;
 
     const firstSuggestion = suggestions[0];
     const displayUrl = firstSuggestion.url.replace(/^https?:\/\//, '');
@@ -114,7 +118,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       
       onChange(completion);
     }
-  }, [onChange]);
+  }, [onChange, isBackspacing]);
 
   const debouncedGetSuggestions = useCallback((query: string) => {
     if (debounceRef.current) {
@@ -134,10 +138,20 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     const newValue = e.target.value;
     setOriginalValue(newValue);
     onChange(newValue);
+    
+    // 重置backspace标志
+    setIsBackspacing(false);
     debouncedGetSuggestions(newValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 检测backspace操作
+    if (e.key === 'Backspace') {
+      setIsBackspacing(true);
+      // 短暂延迟后重置backspace标志，避免影响后续正常输入
+      setTimeout(() => setIsBackspacing(false), 300);
+    }
+
     if (!showSuggestions) {
       if (e.key === 'Enter') {
         onSubmit(value);
