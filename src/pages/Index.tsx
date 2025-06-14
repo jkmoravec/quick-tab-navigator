@@ -92,18 +92,19 @@ const Index = () => {
       </div>
 
       {/* 主搜索区域 */}
-      <div className="w-full max-w-2xl mx-auto">
-        <div className="flex gap-3 mb-8">
+      <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+        {/* 搜索栏容器 */}
+        <div className="flex items-center gap-3 w-full mb-8">
           <AutoComplete
             value={query}
             onChange={setQuery}
             onSubmit={handleSubmit}
             placeholder="输入网址或搜索关键词..."
-            className="text-lg py-6 px-6 rounded-full bg-gray-800 border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 transition-colors"
+            className="flex-1 text-lg py-4 px-6 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
           />
           
           <Select value={searchEngine} onValueChange={setSearchEngine}>
-            <SelectTrigger className="w-32 py-6 rounded-full bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger className="w-32 py-4 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -117,7 +118,7 @@ const Index = () => {
           
           <Button 
             onClick={() => handleSubmit(query)}
-            className="px-8 py-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            className="px-6 py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
           >
             转到
           </Button>
@@ -125,7 +126,7 @@ const Index = () => {
 
         {/* 快速链接区域 */}
         {quickLinks.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
             {quickLinks.map((link) => (
               <Button
                 key={link.id}

@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search } from "lucide-react";
 
 interface SuggestionItem {
   id: string;
@@ -228,7 +227,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   }, []);
 
   return (
-    <div className="relative flex-1">
+    <div className="relative">
       <input
         ref={inputRef}
         value={value}
@@ -239,9 +238,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         autoComplete="off"
         spellCheck={false}
       />
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-        <Search className="h-5 w-5 text-gray-400" />
-      </div>
       
       {showSuggestions && suggestions.length > 0 && (
         <div 
