@@ -26,9 +26,8 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // 模拟 Chrome API 调用（实际项目中需要替换为真实的 Chrome API）
+  // 模拟 Chrome API 调用
   const searchHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    // 模拟历史记录数据
     const mockHistory = [
       { title: "ChatGPT", url: "https://chatgpt.com", favicon: "🤖" },
       { title: "GitHub", url: "https://github.com", favicon: "👨‍💻" },
@@ -53,7 +52,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   }, []);
 
   const searchBookmarks = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    // 模拟书签数据
     const mockBookmarks = [
       { title: "React Documentation", url: "https://react.dev", favicon: "⚛️" },
       { title: "MDN Web Docs", url: "https://developer.mozilla.org", favicon: "📖" },
@@ -93,7 +91,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
       
-      // 内联自动补全逻辑
       updateInlineSuggestion(query, allSuggestions);
     } catch (error) {
       console.error('获取建议失败:', error);
@@ -108,16 +105,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     const firstSuggestion = suggestions[0];
     const displayUrl = firstSuggestion.url.replace(/^https?:\/\//, '');
     
-    // 检查是否为前缀匹配
     if (displayUrl.toLowerCase().startsWith(query.toLowerCase()) && query.length > 0) {
       const input = inputRef.current;
       const completion = displayUrl;
       
-      // 设置输入框值并选中补全部分
       input.value = completion;
       input.setSelectionRange(query.length, completion.length);
       
-      // 更新父组件的值但不触发onChange，避免循环
       onChange(completion);
     }
   }, [onChange]);
@@ -175,7 +169,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         setShowSuggestions(false);
         setSuggestions([]);
         setSelectedIndex(-1);
-        // 恢复原始输入
         if (inputRef.current) {
           inputRef.current.value = originalValue;
           onChange(originalValue);
@@ -183,7 +176,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         break;
       case 'Tab':
       case 'ArrowRight':
-        // 接受内联补全
         if (inputRef.current && inputRef.current.selectionStart !== inputRef.current.selectionEnd) {
           e.preventDefault();
           const input = inputRef.current;
@@ -205,7 +197,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     handleSuggestionSelect(suggestion);
   };
 
-  // 点击外部关闭建议
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
@@ -217,7 +208,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 清理定时器
   useEffect(() => {
     return () => {
       if (debounceRef.current) {

@@ -93,35 +93,42 @@ const Index = () => {
 
       {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        {/* 搜索栏容器 */}
-        <div className="flex items-center gap-3 w-full mb-8">
-          <AutoComplete
-            value={query}
-            onChange={setQuery}
-            onSubmit={handleSubmit}
-            placeholder="输入网址或搜索关键词..."
-            className="flex-1 text-lg py-4 px-6 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
-          />
+        {/* 搜索栏 - 改为单一输入框样式 */}
+        <div className="w-full max-w-lg mb-8">
+          <div className="relative">
+            <AutoComplete
+              value={query}
+              onChange={setQuery}
+              onSubmit={handleSubmit}
+              placeholder="输入网址或搜索关键词..."
+              className="w-full text-lg py-3 px-4 pr-20 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+            />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Button 
+                onClick={() => handleSubmit(query)}
+                size="sm"
+                className="px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
+              >
+                转到
+              </Button>
+            </div>
+          </div>
           
-          <Select value={searchEngine} onValueChange={setSearchEngine}>
-            <SelectTrigger className="w-32 py-4 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {searchEngines.map((engine) => (
-                <SelectItem key={engine.id} value={engine.id}>
-                  {engine.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Button 
-            onClick={() => handleSubmit(query)}
-            className="px-6 py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
-          >
-            转到
-          </Button>
+          {/* 搜索引擎选择器 - 移到下方 */}
+          <div className="flex justify-center mt-4">
+            <Select value={searchEngine} onValueChange={setSearchEngine}>
+              <SelectTrigger className="w-40 py-2 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {searchEngines.map((engine) => (
+                  <SelectItem key={engine.id} value={engine.id}>
+                    {engine.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* 快速链接区域 */}
