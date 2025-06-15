@@ -11,6 +11,7 @@ import {
 import SearchEngineConfig from "@/components/SearchEngineConfig";
 import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface SearchEngine {
   id: string;
@@ -70,16 +71,17 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4">
-      {/* 设置按钮 */}
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
+      {/* 设置和主题切换按钮 */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-200">
+            <Button variant="ghost" size="icon" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
               <Settings className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white">
+          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800">
             <DropdownMenuItem onClick={() => setShowSettings(true)}>
               搜索引擎设置
             </DropdownMenuItem>
@@ -101,17 +103,17 @@ const Index = () => {
                 onChange={setQuery}
                 onSubmit={handleSubmit}
                 placeholder="输入网址或搜索关键词..."
-                className="w-full h-12 text-lg px-4 rounded-full bg-gray-800 border border-gray-700 text-white placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full h-12 text-lg px-4 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             
             <Select value={searchEngine} onValueChange={setSearchEngine}>
-              <SelectTrigger className="w-40 h-12 rounded-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700 focus:border-blue-500">
+              <SelectTrigger className="w-40 h-12 rounded-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 focus:border-blue-500">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent className="bg-white dark:bg-gray-800">
                 {searchEngines.map((engine) => (
-                  <SelectItem key={engine.id} value={engine.id}>
+                  <SelectItem key={engine.id} value={engine.id} className="text-gray-900 dark:text-white">
                     {engine.name}
                   </SelectItem>
                 ))}
@@ -134,7 +136,7 @@ const Index = () => {
               <Button
                 key={link.id}
                 variant="ghost"
-                className="h-16 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-700 text-white transition-colors"
+                className="h-16 rounded-xl bg-gray-100/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
                 onClick={() => window.open(link.url, '_blank')}
               >
                 <div className="text-center">
@@ -150,7 +152,7 @@ const Index = () => {
       {/* 设置弹窗 */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <SearchEngineConfig 
               engines={searchEngines}
               onEnginesChange={setSearchEngines}
@@ -163,7 +165,7 @@ const Index = () => {
       {/* 快速链接配置弹窗 */}
       {showQuickLinksConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <QuickLinksConfig 
               links={quickLinks}
               onLinksChange={setQuickLinks}
