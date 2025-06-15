@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,12 +13,14 @@ import SearchEngineConfig from "@/components/SearchEngineConfig";
 import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
+import KagiProfileSelect from "@/components/KagiProfileSelect";
 
 interface SearchEngine {
   id: string;
   name: string;
   url: string;
   isDefault?: boolean;
+  isAI?: boolean;
 }
 
 interface QuickLink {
@@ -27,18 +30,25 @@ interface QuickLink {
   icon?: string;
 }
 
+interface KagiProfile {
+  id: string;
+  name: string;
+}
+
 const Index = () => {
   const [query, setQuery] = useState("");
   const [searchEngine, setSearchEngine] = useState("google");
+  const [selectedKagiProfile, setSelectedKagiProfile] = useState<string>("");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
 
-  // 默认搜索引擎
+  // 默认搜索引擎（包含Kagi Assistant）
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>([
     { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
     { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
     { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
-    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" }
+    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
+    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
   ]);
 
   // 自定义快速链接
@@ -54,6 +64,21 @@ const Index = () => {
     }
   };
 
+  // 处理Kagi Assistant搜索
+  const handleKagiSearch = (query: string, profile: string) => {
+    const params = new URLSearchParams({
+      q: query,
+      internet: 'true'
+    });
+    
+    if (profile) {
+      params.set('profile', profile);
+    }
+    
+    const url = `https://kagi.com/assistant?${params.toString()}`;
+    window.open(url, '_blank');
+  };
+
   // 处理搜索/导航
   const handleSubmit = (value: string) => {
     if (!value.trim()) return;
@@ -64,11 +89,17 @@ const Index = () => {
     } else {
       const engine = searchEngines.find(e => e.id === searchEngine);
       if (engine) {
-        const searchUrl = engine.url + encodeURIComponent(value);
-        window.open(searchUrl, '_blank');
+        if (engine.id === 'kagi-assistant') {
+          handleKagiSearch(value, selectedKagiProfile);
+        } else {
+          const searchUrl = engine.url + encodeURIComponent(value);
+          window.open(searchUrl, '_blank');
+        }
       }
     }
   };
+
+  const isKagiSelected = searchEngine === 'kagi-assistant';
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
@@ -102,7 +133,7 @@ const Index = () => {
                 value={query}
                 onChange={setQuery}
                 onSubmit={handleSubmit}
-                placeholder="输入网址或搜索关键词..."
+                placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
                 className="w-full h-12 text-lg px-4 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
@@ -115,16 +146,25 @@ const Index = () => {
                 {searchEngines.map((engine) => (
                   <SelectItem key={engine.id} value={engine.id} className="text-gray-900 dark:text-white">
                     {engine.name}
+                    {engine.isAI && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">AI</span>}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
+            {/* Kagi配置文件选择器 */}
+            {isKagiSelected && (
+              <KagiProfileSelect
+                value={selectedKagiProfile}
+                onChange={setSelectedKagiProfile}
+              />
+            )}
+
             <Button 
               onClick={() => handleSubmit(query)}
               className="h-12 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
             >
-              转到
+              {isKagiSelected ? "提问" : "转到"}
             </Button>
           </div>
         </div>

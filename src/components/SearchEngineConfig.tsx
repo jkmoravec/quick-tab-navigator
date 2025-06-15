@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, Bot } from "lucide-react";
 
 interface SearchEngine {
   id: string;
   name: string;
   url: string;
   isDefault?: boolean;
+  isAI?: boolean;
 }
 
 interface SearchEngineConfigProps {
@@ -31,6 +32,10 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
   };
 
   const removeEngine = (id: string) => {
+    // 防止删除Kagi Assistant
+    if (id === 'kagi-assistant') {
+      return;
+    }
     onEnginesChange(engines.filter(engine => engine.id !== id));
   };
 
@@ -55,8 +60,18 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
           {engines.map((engine) => (
             <div key={engine.id} className="flex items-center gap-4 p-3 border rounded-lg">
               <div className="flex-1">
-                <div className="font-medium">{engine.name}</div>
-                <div className="text-sm text-gray-500">{engine.url}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{engine.name}</span>
+                  {engine.isAI && (
+                    <span className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+                      <Bot className="h-3 w-3" />
+                      AI
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {engine.isAI ? "AI助手搜索" : engine.url}
+                </div>
               </div>
               <div className="flex gap-2">
                 {engine.isDefault ? (
@@ -72,14 +87,16 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
                     设为默认
                   </Button>
                 )}
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => removeEngine(engine.id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {engine.id !== 'kagi-assistant' && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => removeEngine(engine.id)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))}
@@ -112,6 +129,21 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
                 <Plus className="h-4 w-4 mr-2" />
                 添加
               </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Kagi Assistant 说明 */}
+        <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                关于 Kagi Assistant
+              </h4>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Kagi Assistant 是集成的AI助手，支持多种模型（GPT-4o、Claude等）。使用前请确保已登录 Kagi 账户并有可用的配额。
+              </p>
             </div>
           </div>
         </div>
