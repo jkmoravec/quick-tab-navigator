@@ -114,7 +114,9 @@ const KagiProfileSelect = ({ value, onChange }: KagiProfileSelectProps) => {
       </Button>
       
       {error && (
-        <AlertCircle className="h-4 w-4 text-orange-500" title={error} />
+        <div className="flex items-center" title={error}>
+          <AlertCircle className="h-4 w-4 text-orange-500" />
+        </div>
       )}
     </div>
   );
