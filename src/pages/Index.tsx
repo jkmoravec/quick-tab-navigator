@@ -13,7 +13,6 @@ import SearchEngineConfig from "@/components/SearchEngineConfig";
 import QuickLinksConfig from "@/components/QuickLinksConfig";
 import AutoComplete from "@/components/AutoComplete";
 import ThemeToggle from "@/components/ThemeToggle";
-import KagiProfileSelect from "@/components/KagiProfileSelect";
 
 interface SearchEngine {
   id: string;
@@ -30,15 +29,9 @@ interface QuickLink {
   icon?: string;
 }
 
-interface KagiProfile {
-  id: string;
-  name: string;
-}
-
 const Index = () => {
   const [query, setQuery] = useState("");
   const [searchEngine, setSearchEngine] = useState("google");
-  const [selectedKagiProfile, setSelectedKagiProfile] = useState<string>("");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
 
@@ -65,15 +58,11 @@ const Index = () => {
   };
 
   // 处理Kagi Assistant搜索
-  const handleKagiSearch = (query: string, profile: string) => {
+  const handleKagiSearch = (query: string) => {
     const params = new URLSearchParams({
       q: query,
       internet: 'true'
     });
-    
-    if (profile) {
-      params.set('profile', profile);
-    }
     
     const url = `https://kagi.com/assistant?${params.toString()}`;
     window.open(url, '_blank');
@@ -90,7 +79,7 @@ const Index = () => {
       const engine = searchEngines.find(e => e.id === searchEngine);
       if (engine) {
         if (engine.id === 'kagi-assistant') {
-          handleKagiSearch(value, selectedKagiProfile);
+          handleKagiSearch(value);
         } else {
           const searchUrl = engine.url + encodeURIComponent(value);
           window.open(searchUrl, '_blank');
@@ -151,14 +140,6 @@ const Index = () => {
                 ))}
               </SelectContent>
             </Select>
-
-            {/* Kagi配置文件选择器 */}
-            {isKagiSelected && (
-              <KagiProfileSelect
-                value={selectedKagiProfile}
-                onChange={setSelectedKagiProfile}
-              />
-            )}
 
             <Button 
               onClick={() => handleSubmit(query)}
