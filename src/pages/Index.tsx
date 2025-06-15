@@ -57,7 +57,7 @@ const Index = () => {
     }
   };
 
-  // 处理Kagi Assistant搜索
+  // 处理Kagi Assistant搜索 - 简化版本，不传递profile参数
   const handleKagiSearch = (query: string) => {
     const params = new URLSearchParams({
       q: query,
