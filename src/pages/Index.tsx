@@ -30,7 +30,6 @@ interface QuickLink {
 
 const Index = () => {
   const [query, setQuery] = useState("");
-  const [searchEngine, setSearchEngine] = useState("google");
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
 
@@ -45,6 +44,22 @@ const Index = () => {
 
   // 自定义快速链接
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
+
+  // 获取当前默认搜索引擎ID
+  const getDefaultSearchEngine = () => {
+    const defaultEngine = searchEngines.find(e => e.isDefault);
+    return defaultEngine ? defaultEngine.id : "google";
+  };
+
+  const [searchEngine, setSearchEngine] = useState(getDefaultSearchEngine());
+
+  // 当搜索引擎列表变化时，更新当前选中的搜索引擎
+  useEffect(() => {
+    const defaultEngine = searchEngines.find(e => e.isDefault);
+    if (defaultEngine && searchEngine !== defaultEngine.id) {
+      setSearchEngine(defaultEngine.id);
+    }
+  }, [searchEngines]);
 
   // 判断是否为URL
   const isURL = (text: string) => {
@@ -134,9 +149,9 @@ const Index = () => {
             </Button>
           </div>
           
-          {/* 搜索引擎选择 - 简化为按钮形式 */}
-          <div className="flex items-center justify-center gap-2 mt-6">
-            {searchEngines.slice(0, 5).map((engine) => (
+          {/* 搜索引擎选择 - 改进版本，支持更多搜索引擎 */}
+          <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+            {searchEngines.map((engine) => (
               <Button
                 key={engine.id}
                 variant={searchEngine === engine.id ? "default" : "ghost"}
@@ -149,7 +164,7 @@ const Index = () => {
                 onClick={() => setSearchEngine(engine.id)}
               >
                 {engine.name}
-                {engine.isAI && searchEngine === engine.id && (
+                {engine.isAI && (
                   <span className="ml-1 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">AI</span>
                 )}
               </Button>
