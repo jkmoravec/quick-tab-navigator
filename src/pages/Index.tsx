@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +88,7 @@ const Index = () => {
   };
 
   const isKagiSelected = searchEngine === 'kagi-assistant';
+  const currentEngine = searchEngines.find(e => e.id === searchEngine);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
@@ -114,39 +114,46 @@ const Index = () => {
 
       {/* 主搜索区域 */}
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        {/* 搜索栏 - 水平布局，统一高度 */}
+        {/* 大搜索栏 - 类似Google主页的样式 */}
         <div className="w-full mb-8">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <AutoComplete
-                value={query}
-                onChange={setQuery}
-                onSubmit={handleSubmit}
-                placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
-                className="w-full h-12 text-lg px-4 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-colors"
-              />
-            </div>
+          <div className="relative">
+            <AutoComplete
+              value={query}
+              onChange={setQuery}
+              onSubmit={handleSubmit}
+              placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
+              className="w-full h-14 text-lg px-6 pr-24 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-200 shadow-lg hover:shadow-xl focus:shadow-xl"
+            />
             
-            <Select value={searchEngine} onValueChange={setSearchEngine}>
-              <SelectTrigger className="w-40 h-12 rounded-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 focus:border-blue-500">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-800">
-                {searchEngines.map((engine) => (
-                  <SelectItem key={engine.id} value={engine.id} className="text-gray-900 dark:text-white">
-                    {engine.name}
-                    {engine.isAI && <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-1.5 py-0.5 rounded">AI</span>}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+            {/* 搜索按钮在输入框内 */}
             <Button 
               onClick={() => handleSubmit(query)}
-              className="h-12 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
             >
-              {isKagiSelected ? "提问" : "转到"}
+              {isKagiSelected ? "提问" : "搜索"}
             </Button>
+          </div>
+          
+          {/* 搜索引擎选择 - 简化为按钮形式 */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            {searchEngines.slice(0, 5).map((engine) => (
+              <Button
+                key={engine.id}
+                variant={searchEngine === engine.id ? "default" : "ghost"}
+                size="sm"
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  searchEngine === engine.id 
+                    ? "bg-blue-600 text-white shadow-md" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+                onClick={() => setSearchEngine(engine.id)}
+              >
+                {engine.name}
+                {engine.isAI && searchEngine === engine.id && (
+                  <span className="ml-1 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">AI</span>
+                )}
+              </Button>
+            ))}
           </div>
         </div>
 
