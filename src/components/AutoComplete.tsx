@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -21,7 +22,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [originalValue, setOriginalValue] = useState("");
-  const [isBackspacing, setIsBackspacing] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -32,13 +33,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
       return history
         .filter((item: any) => 
-          item.title.toLowerCase().includes(text.toLowerCase()) ||
-          item.url.toLowerCase().includes(text.toLowerCase())
+          item.title?.toLowerCase().includes(text.toLowerCase()) ||
+          item.url?.toLowerCase().includes(text.toLowerCase())
         )
         .slice(0, 5)
         .map((item: any, index: number) => ({
           id: `history-${index}`,
-          title: item.title,
+          title: item.title || item.url,
           url: item.url,
           favicon: item.favicon || '🌐',
           type: 'history' as const
@@ -54,13 +55,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       const bookmarks = JSON.parse(localStorage.getItem('browserBookmarks') || '[]');
       return bookmarks
         .filter((item: any) => 
-          item.title.toLowerCase().includes(text.toLowerCase()) ||
-          item.url.toLowerCase().includes(text.toLowerCase())
+          item.title?.toLowerCase().includes(text.toLowerCase()) ||
+          item.url?.toLowerCase().includes(text.toLowerCase())
         )
         .slice(0, 3)
         .map((item: any, index: number) => ({
           id: `bookmark-${index}`,
-          title: item.title,
+          title: item.title || item.url,
           url: item.url,
           favicon: item.favicon || '⭐',
           type: 'bookmark' as const
@@ -68,6 +69,31 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch {
       return [];
     }
+  }, []);
+
+  // 获取默认域名建议
+  const getDefaultDomains = useCallback((text: string): SuggestionItem[] => {
+    const domains = [
+      { title: 'Google', url: 'https://www.google.com', favicon: '🔍' },
+      { title: 'GitHub', url: 'https://github.com', favicon: '🐙' },
+      { title: 'YouTube', url: 'https://www.youtube.com', favicon: '📺' },
+      { title: 'ChatGPT', url: 'https://chatgpt.com', favicon: '🤖' },
+      { title: 'Kagi', url: 'https://kagi.com', favicon: '🔎' },
+    ];
+
+    return domains
+      .filter(domain => 
+        domain.title.toLowerCase().includes(text.toLowerCase()) ||
+        domain.url.toLowerCase().includes(text.toLowerCase())
+      )
+      .slice(0, 3)
+      .map((domain, index) => ({
+        id: `domain-${index}`,
+        title: domain.title,
+        url: domain.url,
+        favicon: domain.favicon,
+        type: 'domain' as const
+      }));
   }, []);
 
   // 保存访问记录到本地存储
@@ -93,6 +119,32 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
   }, []);
 
+  // 内联补全功能
+  const updateInlineSuggestion = useCallback((query: string, suggestions: SuggestionItem[]) => {
+    if (!suggestions.length || !inputRef.current || isComposing) return;
+
+    const firstSuggestion = suggestions[0];
+    let displayUrl = firstSuggestion.url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    
+    // 确保URL以域名开始
+    if (displayUrl.includes('/')) {
+      displayUrl = displayUrl.split('/')[0];
+    }
+    
+    if (displayUrl.toLowerCase().startsWith(query.toLowerCase()) && query.length > 0) {
+      const input = inputRef.current;
+      const completion = displayUrl;
+      
+      // 设置完整的补全文本
+      input.value = completion;
+      // 选中补全部分
+      input.setSelectionRange(query.length, completion.length);
+      
+      // 更新父组件的值，但不触发新的搜索
+      onChange(completion);
+    }
+  }, [onChange, isComposing]);
+
   const getSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -103,39 +155,21 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       const historyResults = getLocalHistory(query);
       const bookmarkResults = getLocalBookmarks(query);
+      const domainResults = getDefaultDomains(query);
 
-      const allSuggestions = [...historyResults, ...bookmarkResults].slice(0, 8);
+      const allSuggestions = [...historyResults, ...bookmarkResults, ...domainResults].slice(0, 8);
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
       
-      // 只有在不是backspace操作时才进行内联补全
-      if (!isBackspacing) {
-        updateInlineSuggestion(query, allSuggestions);
-      }
+      // 进行内联补全
+      updateInlineSuggestion(query, allSuggestions);
     } catch (error) {
       console.error('获取建议失败:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [getLocalHistory, getLocalBookmarks, isBackspacing]);
-
-  const updateInlineSuggestion = useCallback((query: string, suggestions: SuggestionItem[]) => {
-    if (!suggestions.length || !inputRef.current || isBackspacing) return;
-
-    const firstSuggestion = suggestions[0];
-    const displayUrl = firstSuggestion.url.replace(/^https?:\/\//, '');
-    
-    if (displayUrl.toLowerCase().startsWith(query.toLowerCase()) && query.length > 0) {
-      const input = inputRef.current;
-      const completion = displayUrl;
-      
-      input.value = completion;
-      input.setSelectionRange(query.length, completion.length);
-      
-      onChange(completion);
-    }
-  }, [onChange, isBackspacing]);
+  }, [getLocalHistory, getLocalBookmarks, getDefaultDomains, updateInlineSuggestion]);
 
   const debouncedGetSuggestions = useCallback((query: string) => {
     if (debounceRef.current) {
@@ -152,22 +186,29 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   }, [getSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isComposing) return;
+    
     const newValue = e.target.value;
     setOriginalValue(newValue);
     onChange(newValue);
     
-    // 重置backspace标志
-    setIsBackspacing(false);
+    debouncedGetSuggestions(newValue);
+  };
+
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposing(false);
+    const newValue = e.currentTarget.value;
+    setOriginalValue(newValue);
+    onChange(newValue);
     debouncedGetSuggestions(newValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // 检测backspace操作
-    if (e.key === 'Backspace') {
-      setIsBackspacing(true);
-      // 短暂延迟后重置backspace标志，避免影响后续正常输入
-      setTimeout(() => setIsBackspacing(false), 300);
-    }
+    if (isComposing) return;
 
     if (!showSuggestions) {
       if (e.key === 'Enter') {
@@ -218,9 +259,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
   const handleSuggestionSelect = (suggestion: SuggestionItem) => {
     // 保存到本地历史记录
-    if (suggestion.type === 'bookmark') {
-      saveToLocalHistory(suggestion.title, suggestion.url);
-    }
+    saveToLocalHistory(suggestion.title, suggestion.url);
     
     onChange(suggestion.url);
     setShowSuggestions(false);
@@ -258,6 +297,8 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         ref={inputRef}
         value={value}
         onChange={handleInputChange}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={className}
@@ -268,12 +309,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       {showSuggestions && suggestions.length > 0 && (
         <div 
           ref={suggestionsRef}
-          className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto"
         >
           {suggestions.map((suggestion, index) => (
             <div
               key={suggestion.id}
-              className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0 ${
+              className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors ${
                 index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30 active' : ''
               }`}
               onClick={() => handleSuggestionClick(suggestion)}
@@ -297,9 +338,11 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   suggestion.type === 'history' 
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' 
-                    : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                    : suggestion.type === 'bookmark'
+                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                    : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
                 }`}>
-                  {suggestion.type === 'history' ? '历史' : '书签'}
+                  {suggestion.type === 'history' ? '历史' : suggestion.type === 'bookmark' ? '书签' : '推荐'}
                 </span>
               </div>
             </div>
