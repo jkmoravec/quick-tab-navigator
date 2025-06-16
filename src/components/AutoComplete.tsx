@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -27,89 +26,8 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // 检查是否支持浏览器 API
-  const isExtensionContext = () => {
-    return typeof chrome !== 'undefined' && chrome.history && chrome.bookmarks;
-  };
-
-  // 使用真实的浏览器历史记录 API
-  const searchHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    if (!isExtensionContext()) {
-      // 降级到本地存储的历史记录
-      return getLocalHistory(text);
-    }
-
-    try {
-      const historyItems = await new Promise<chrome.history.HistoryItem[]>((resolve) => {
-        chrome.history.search({
-          text: text,
-          maxResults: 10,
-          startTime: Date.now() - (30 * 24 * 60 * 60 * 1000) // 最近30天
-        }, resolve);
-      });
-
-      return historyItems
-        .filter(item => item.url && item.title)
-        .slice(0, 5)
-        .map((item, index) => ({
-          id: `history-${index}`,
-          title: item.title || '未知标题',
-          url: item.url!,
-          favicon: `chrome://favicon/${item.url}`,
-          type: 'history' as const
-        }));
-    } catch (error) {
-      console.log('无法访问浏览器历史记录，使用本地存储');
-      return getLocalHistory(text);
-    }
-  }, []);
-
-  // 使用真实的浏览器书签 API
-  const searchBookmarks = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    if (!isExtensionContext()) {
-      // 降级到本地存储的书签
-      return getLocalBookmarks(text);
-    }
-
-    try {
-      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve) => {
-        chrome.bookmarks.getTree(resolve);
-      });
-
-      const bookmarks: SuggestionItem[] = [];
-      const searchBookmarkTree = (nodes: chrome.bookmarks.BookmarkTreeNode[]) => {
-        for (const node of nodes) {
-          if (node.url && node.title) {
-            const title = node.title.toLowerCase();
-            const url = node.url.toLowerCase();
-            const query = text.toLowerCase();
-            
-            if (title.includes(query) || url.includes(query)) {
-              bookmarks.push({
-                id: `bookmark-${node.id}`,
-                title: node.title,
-                url: node.url,
-                favicon: `chrome://favicon/${node.url}`,
-                type: 'bookmark' as const
-              });
-            }
-          }
-          if (node.children) {
-            searchBookmarkTree(node.children);
-          }
-        }
-      };
-
-      searchBookmarkTree(bookmarkTree);
-      return bookmarks.slice(0, 3);
-    } catch (error) {
-      console.log('无法访问浏览器书签，使用本地存储');
-      return getLocalBookmarks(text);
-    }
-  }, []);
-
-  // 本地存储历史记录的降级方案
-  const getLocalHistory = (text: string): SuggestionItem[] => {
+  // 获取本地存储的历史记录
+  const getLocalHistory = useCallback((text: string): SuggestionItem[] => {
     try {
       const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
       return history
@@ -128,10 +46,10 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch {
       return [];
     }
-  };
+  }, []);
 
-  // 本地存储书签的降级方案
-  const getLocalBookmarks = (text: string): SuggestionItem[] => {
+  // 获取本地存储的书签
+  const getLocalBookmarks = useCallback((text: string): SuggestionItem[] => {
     try {
       const bookmarks = JSON.parse(localStorage.getItem('browserBookmarks') || '[]');
       return bookmarks
@@ -150,10 +68,10 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch {
       return [];
     }
-  };
+  }, []);
 
   // 保存访问记录到本地存储
-  const saveToLocalHistory = (title: string, url: string) => {
+  const saveToLocalHistory = useCallback((title: string, url: string) => {
     try {
       const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
       const newItem = {
@@ -173,7 +91,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch (error) {
       console.log('无法保存到本地历史记录');
     }
-  };
+  }, []);
 
   const getSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -183,10 +101,8 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
 
     try {
-      const [historyResults, bookmarkResults] = await Promise.all([
-        searchHistory(query),
-        searchBookmarks(query)
-      ]);
+      const historyResults = getLocalHistory(query);
+      const bookmarkResults = getLocalBookmarks(query);
 
       const allSuggestions = [...historyResults, ...bookmarkResults].slice(0, 8);
       setSuggestions(allSuggestions);
@@ -202,7 +118,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [searchHistory, searchBookmarks, isBackspacing]);
+  }, [getLocalHistory, getLocalBookmarks, isBackspacing]);
 
   const updateInlineSuggestion = useCallback((query: string, suggestions: SuggestionItem[]) => {
     if (!suggestions.length || !inputRef.current || isBackspacing) return;
@@ -363,21 +279,11 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                {suggestion.favicon && suggestion.favicon.startsWith('chrome://') ? (
-                  <img 
-                    src={suggestion.favicon} 
-                    alt="" 
-                    className="w-4 h-4"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : suggestion.favicon ? (
+                {suggestion.favicon ? (
                   <span className="text-lg">{suggestion.favicon}</span>
-                ) : null}
-                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded hidden"></div>
+                ) : (
+                  <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 dark:text-white truncate">
