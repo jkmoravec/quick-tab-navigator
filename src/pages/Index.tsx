@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,7 @@ const Index = () => {
     if (defaultEngine && searchEngine !== defaultEngine.id) {
       setSearchEngine(defaultEngine.id);
     }
-  }, [searchEngines]);
+  }, [searchEngines, searchEngine]);
 
   // 判断是否为URL
   const isURL = (text: string) => {
@@ -128,8 +127,8 @@ const Index = () => {
       </div>
 
       {/* 主搜索区域 */}
-      <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        {/* 大搜索栏 - 类似Google主页的样式 */}
+      <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
+        {/* 大搜索栏 - 更大更突出的设计 */}
         <div className="w-full mb-8">
           <div className="relative">
             <AutoComplete
@@ -137,13 +136,13 @@ const Index = () => {
               onChange={setQuery}
               onSubmit={handleSubmit}
               placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
-              className="w-full h-14 text-lg px-6 pr-24 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-200 shadow-lg hover:shadow-xl focus:shadow-xl"
+              className="w-full h-16 text-xl px-8 pr-32 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-300 shadow-xl hover:shadow-2xl focus:shadow-2xl"
             />
             
             {/* 搜索按钮在输入框内 */}
             <Button 
               onClick={() => handleSubmit(query)}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
             >
               {isKagiSelected ? "提问" : "搜索"}
             </Button>
