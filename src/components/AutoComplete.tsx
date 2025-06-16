@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -26,52 +27,153 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // 模拟 Chrome API 调用
+  // 检查是否支持浏览器 API
+  const isExtensionContext = () => {
+    return typeof chrome !== 'undefined' && chrome.history && chrome.bookmarks;
+  };
+
+  // 使用真实的浏览器历史记录 API
   const searchHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    const mockHistory = [
-      { title: "ChatGPT", url: "https://chatgpt.com", favicon: "🤖" },
-      { title: "GitHub", url: "https://github.com", favicon: "👨‍💻" },
-      { title: "Stack Overflow", url: "https://stackoverflow.com", favicon: "📚" },
-      { title: "YouTube", url: "https://youtube.com", favicon: "📺" },
-      { title: "Gmail", url: "https://gmail.com", favicon: "📧" }
-    ];
+    if (!isExtensionContext()) {
+      // 降级到本地存储的历史记录
+      return getLocalHistory(text);
+    }
 
-    return mockHistory
-      .filter(item => 
-        item.title.toLowerCase().includes(text.toLowerCase()) ||
-        item.url.toLowerCase().includes(text.toLowerCase())
-      )
-      .slice(0, 5)
-      .map((item, index) => ({
-        id: `history-${index}`,
-        title: item.title,
-        url: item.url,
-        favicon: item.favicon,
-        type: 'history' as const
-      }));
+    try {
+      const historyItems = await new Promise<chrome.history.HistoryItem[]>((resolve) => {
+        chrome.history.search({
+          text: text,
+          maxResults: 10,
+          startTime: Date.now() - (30 * 24 * 60 * 60 * 1000) // 最近30天
+        }, resolve);
+      });
+
+      return historyItems
+        .filter(item => item.url && item.title)
+        .slice(0, 5)
+        .map((item, index) => ({
+          id: `history-${index}`,
+          title: item.title || '未知标题',
+          url: item.url!,
+          favicon: `chrome://favicon/${item.url}`,
+          type: 'history' as const
+        }));
+    } catch (error) {
+      console.log('无法访问浏览器历史记录，使用本地存储');
+      return getLocalHistory(text);
+    }
   }, []);
 
+  // 使用真实的浏览器书签 API
   const searchBookmarks = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    const mockBookmarks = [
-      { title: "React Documentation", url: "https://react.dev", favicon: "⚛️" },
-      { title: "MDN Web Docs", url: "https://developer.mozilla.org", favicon: "📖" },
-      { title: "TypeScript Handbook", url: "https://typescriptlang.org", favicon: "🔷" }
-    ];
+    if (!isExtensionContext()) {
+      // 降级到本地存储的书签
+      return getLocalBookmarks(text);
+    }
 
-    return mockBookmarks
-      .filter(item => 
-        item.title.toLowerCase().includes(text.toLowerCase()) ||
-        item.url.toLowerCase().includes(text.toLowerCase())
-      )
-      .slice(0, 3)
-      .map((item, index) => ({
-        id: `bookmark-${index}`,
-        title: item.title,
-        url: item.url,
-        favicon: item.favicon,
-        type: 'bookmark' as const
-      }));
+    try {
+      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve) => {
+        chrome.bookmarks.getTree(resolve);
+      });
+
+      const bookmarks: SuggestionItem[] = [];
+      const searchBookmarkTree = (nodes: chrome.bookmarks.BookmarkTreeNode[]) => {
+        for (const node of nodes) {
+          if (node.url && node.title) {
+            const title = node.title.toLowerCase();
+            const url = node.url.toLowerCase();
+            const query = text.toLowerCase();
+            
+            if (title.includes(query) || url.includes(query)) {
+              bookmarks.push({
+                id: `bookmark-${node.id}`,
+                title: node.title,
+                url: node.url,
+                favicon: `chrome://favicon/${node.url}`,
+                type: 'bookmark' as const
+              });
+            }
+          }
+          if (node.children) {
+            searchBookmarkTree(node.children);
+          }
+        }
+      };
+
+      searchBookmarkTree(bookmarkTree);
+      return bookmarks.slice(0, 3);
+    } catch (error) {
+      console.log('无法访问浏览器书签，使用本地存储');
+      return getLocalBookmarks(text);
+    }
   }, []);
+
+  // 本地存储历史记录的降级方案
+  const getLocalHistory = (text: string): SuggestionItem[] => {
+    try {
+      const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
+      return history
+        .filter((item: any) => 
+          item.title.toLowerCase().includes(text.toLowerCase()) ||
+          item.url.toLowerCase().includes(text.toLowerCase())
+        )
+        .slice(0, 5)
+        .map((item: any, index: number) => ({
+          id: `history-${index}`,
+          title: item.title,
+          url: item.url,
+          favicon: item.favicon || '🌐',
+          type: 'history' as const
+        }));
+    } catch {
+      return [];
+    }
+  };
+
+  // 本地存储书签的降级方案
+  const getLocalBookmarks = (text: string): SuggestionItem[] => {
+    try {
+      const bookmarks = JSON.parse(localStorage.getItem('browserBookmarks') || '[]');
+      return bookmarks
+        .filter((item: any) => 
+          item.title.toLowerCase().includes(text.toLowerCase()) ||
+          item.url.toLowerCase().includes(text.toLowerCase())
+        )
+        .slice(0, 3)
+        .map((item: any, index: number) => ({
+          id: `bookmark-${index}`,
+          title: item.title,
+          url: item.url,
+          favicon: item.favicon || '⭐',
+          type: 'bookmark' as const
+        }));
+    } catch {
+      return [];
+    }
+  };
+
+  // 保存访问记录到本地存储
+  const saveToLocalHistory = (title: string, url: string) => {
+    try {
+      const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
+      const newItem = {
+        title,
+        url,
+        favicon: '🌐',
+        timestamp: Date.now()
+      };
+      
+      // 移除重复项
+      const filteredHistory = history.filter((item: any) => item.url !== url);
+      
+      // 添加到开头，保持最多50条记录
+      const updatedHistory = [newItem, ...filteredHistory].slice(0, 50);
+      
+      localStorage.setItem('browserHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.log('无法保存到本地历史记录');
+    }
+  };
 
   const getSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -199,6 +301,11 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   };
 
   const handleSuggestionSelect = (suggestion: SuggestionItem) => {
+    // 保存到本地历史记录
+    if (suggestion.type === 'bookmark') {
+      saveToLocalHistory(suggestion.title, suggestion.url);
+    }
+    
     onChange(suggestion.url);
     setShowSuggestions(false);
     setSuggestions([]);
@@ -256,11 +363,21 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
               onClick={() => handleSuggestionClick(suggestion)}
             >
               <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                {suggestion.favicon ? (
+                {suggestion.favicon && suggestion.favicon.startsWith('chrome://') ? (
+                  <img 
+                    src={suggestion.favicon} 
+                    alt="" 
+                    className="w-4 h-4"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : suggestion.favicon ? (
                   <span className="text-lg">{suggestion.favicon}</span>
-                ) : (
-                  <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                )}
+                ) : null}
+                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded hidden"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-gray-900 dark:text-white truncate">
