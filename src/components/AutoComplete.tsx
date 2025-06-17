@@ -6,7 +6,7 @@ interface SuggestionItem {
   title: string;
   url: string;
   favicon?: string;
-  type: 'history' | 'bookmark' | 'domain';
+  type: 'history' | 'bookmark';
 }
 
 interface AutoCompleteProps {
@@ -35,7 +35,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           item.title?.toLowerCase().includes(text.toLowerCase()) ||
           item.url?.toLowerCase().includes(text.toLowerCase())
         )
-        .slice(0, 5)
+        .slice(0, 8)
         .map((item: any, index: number) => ({
           id: `history-${index}`,
           title: item.title || item.url,
@@ -57,7 +57,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           item.title?.toLowerCase().includes(text.toLowerCase()) ||
           item.url?.toLowerCase().includes(text.toLowerCase())
         )
-        .slice(0, 3)
+        .slice(0, 5)
         .map((item: any, index: number) => ({
           id: `bookmark-${index}`,
           title: item.title || item.url,
@@ -68,31 +68,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch {
       return [];
     }
-  }, []);
-
-  // 获取默认域名建议
-  const getDefaultDomains = useCallback((text: string): SuggestionItem[] => {
-    const domains = [
-      { title: 'Google', url: 'https://www.google.com', favicon: '🔍' },
-      { title: 'GitHub', url: 'https://github.com', favicon: '🐙' },
-      { title: 'YouTube', url: 'https://www.youtube.com', favicon: '📺' },
-      { title: 'ChatGPT', url: 'https://chatgpt.com', favicon: '🤖' },
-      { title: 'Kagi', url: 'https://kagi.com', favicon: '🔎' },
-    ];
-
-    return domains
-      .filter(domain => 
-        domain.title.toLowerCase().includes(text.toLowerCase()) ||
-        domain.url.toLowerCase().includes(text.toLowerCase())
-      )
-      .slice(0, 3)
-      .map((domain, index) => ({
-        id: `domain-${index}`,
-        title: domain.title,
-        url: domain.url,
-        favicon: domain.favicon,
-        type: 'domain' as const
-      }));
   }, []);
 
   // 保存访问记录到本地存储
@@ -118,6 +93,31 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
   }, []);
 
+  // 内联补全功能
+  const applyInlineCompletion = useCallback((query: string, suggestions: SuggestionItem[]) => {
+    if (!suggestions.length || !inputRef.current || isComposing || !query.trim()) return;
+
+    const firstSuggestion = suggestions[0];
+    let completionText = firstSuggestion.url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    
+    // 取域名部分
+    if (completionText.includes('/')) {
+      completionText = completionText.split('/')[0];
+    }
+    
+    // 检查是否匹配前缀
+    if (completionText.toLowerCase().startsWith(query.toLowerCase())) {
+      const input = inputRef.current;
+      
+      // 设置完整文本并选中补全部分
+      input.value = completionText;
+      input.setSelectionRange(query.length, completionText.length);
+      
+      // 更新状态但不触发新的搜索
+      onChange(completionText);
+    }
+  }, [onChange, isComposing]);
+
   const getSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -128,18 +128,20 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       const historyResults = getLocalHistory(query);
       const bookmarkResults = getLocalBookmarks(query);
-      const domainResults = getDefaultDomains(query);
-
-      const allSuggestions = [...historyResults, ...bookmarkResults, ...domainResults].slice(0, 8);
+      const allSuggestions = [...historyResults, ...bookmarkResults].slice(0, 8);
+      
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
+      
+      // 应用内联补全
+      applyInlineCompletion(query, allSuggestions);
     } catch (error) {
       console.error('获取建议失败:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [getLocalHistory, getLocalBookmarks, getDefaultDomains]);
+  }, [getLocalHistory, getLocalBookmarks, applyInlineCompletion]);
 
   const debouncedGetSuggestions = useCallback((query: string) => {
     if (debounceRef.current) {
@@ -152,11 +154,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   }, [getSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isComposing) return;
-    
     const newValue = e.target.value;
     onChange(newValue);
-    debouncedGetSuggestions(newValue);
+    
+    if (!isComposing) {
+      debouncedGetSuggestions(newValue);
+    }
   };
 
   const handleCompositionStart = () => {
@@ -176,6 +179,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     if (!showSuggestions) {
       if (e.key === 'Enter') {
         onSubmit(value);
+      } else if (e.key === 'Tab' || e.key === 'ArrowRight') {
+        // 如果有选中的文本，接受补全
+        const input = inputRef.current;
+        if (input && input.selectionStart !== input.selectionEnd) {
+          e.preventDefault();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
       }
       return;
     }
@@ -204,6 +214,15 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         setShowSuggestions(false);
         setSuggestions([]);
         setSelectedIndex(-1);
+        break;
+      case 'Tab':
+      case 'ArrowRight':
+        // 接受当前的内联补全
+        const input = inputRef.current;
+        if (input && input.selectionStart !== input.selectionEnd) {
+          e.preventDefault();
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
         break;
     }
   };
@@ -289,11 +308,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   suggestion.type === 'history' 
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' 
-                    : suggestion.type === 'bookmark'
-                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                    : 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                    : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                 }`}>
-                  {suggestion.type === 'history' ? '历史' : suggestion.type === 'bookmark' ? '书签' : '推荐'}
+                  {suggestion.type === 'history' ? '历史' : '书签'}
                 </span>
               </div>
             </div>
