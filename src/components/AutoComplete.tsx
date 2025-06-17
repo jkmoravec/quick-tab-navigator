@@ -21,7 +21,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [originalValue, setOriginalValue] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -119,32 +118,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
   }, []);
 
-  // 内联补全功能
-  const updateInlineSuggestion = useCallback((query: string, suggestions: SuggestionItem[]) => {
-    if (!suggestions.length || !inputRef.current || isComposing) return;
-
-    const firstSuggestion = suggestions[0];
-    let displayUrl = firstSuggestion.url.replace(/^https?:\/\//, '').replace(/^www\./, '');
-    
-    // 确保URL以域名开始
-    if (displayUrl.includes('/')) {
-      displayUrl = displayUrl.split('/')[0];
-    }
-    
-    if (displayUrl.toLowerCase().startsWith(query.toLowerCase()) && query.length > 0) {
-      const input = inputRef.current;
-      const completion = displayUrl;
-      
-      // 设置完整的补全文本
-      input.value = completion;
-      // 选中补全部分
-      input.setSelectionRange(query.length, completion.length);
-      
-      // 更新父组件的值，但不触发新的搜索
-      onChange(completion);
-    }
-  }, [onChange, isComposing]);
-
   const getSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -161,15 +134,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
-      
-      // 进行内联补全
-      updateInlineSuggestion(query, allSuggestions);
     } catch (error) {
       console.error('获取建议失败:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [getLocalHistory, getLocalBookmarks, getDefaultDomains, updateInlineSuggestion]);
+  }, [getLocalHistory, getLocalBookmarks, getDefaultDomains]);
 
   const debouncedGetSuggestions = useCallback((query: string) => {
     if (debounceRef.current) {
@@ -177,11 +147,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     }
     
     debounceRef.current = setTimeout(() => {
-      if (window.requestIdleCallback) {
-        requestIdleCallback(() => getSuggestions(query));
-      } else {
-        getSuggestions(query);
-      }
+      getSuggestions(query);
     }, 150);
   }, [getSuggestions]);
 
@@ -189,9 +155,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     if (isComposing) return;
     
     const newValue = e.target.value;
-    setOriginalValue(newValue);
     onChange(newValue);
-    
     debouncedGetSuggestions(newValue);
   };
 
@@ -202,7 +166,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     setIsComposing(false);
     const newValue = e.currentTarget.value;
-    setOriginalValue(newValue);
     onChange(newValue);
     debouncedGetSuggestions(newValue);
   };
@@ -241,18 +204,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
         setShowSuggestions(false);
         setSuggestions([]);
         setSelectedIndex(-1);
-        if (inputRef.current) {
-          inputRef.current.value = originalValue;
-          onChange(originalValue);
-        }
-        break;
-      case 'Tab':
-      case 'ArrowRight':
-        if (inputRef.current && inputRef.current.selectionStart !== inputRef.current.selectionEnd) {
-          e.preventDefault();
-          const input = inputRef.current;
-          input.setSelectionRange(input.value.length, input.value.length);
-        }
         break;
     }
   };
@@ -315,7 +266,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
             <div
               key={suggestion.id}
               className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0 transition-colors ${
-                index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30 active' : ''
+                index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30' : ''
               }`}
               onClick={() => handleSuggestionClick(suggestion)}
             >
