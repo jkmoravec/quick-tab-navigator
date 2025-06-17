@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -26,17 +27,23 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   const debounceRef = useRef<NodeJS.Timeout>();
 
   // 检查是否在Chrome扩展环境中
-  const isExtension = typeof chrome !== 'undefined' && chrome.history;
+  const isExtension = typeof chrome !== 'undefined' && chrome.history && chrome.bookmarks;
 
   // 获取Chrome浏览器历史记录
   const getChromeHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    if (!isExtension) return [];
+    if (!isExtension || !text.trim()) {
+      console.log('Extension not available or empty text');
+      return [];
+    }
     
     try {
+      console.log('Searching Chrome history for:', text);
       const results = await chrome.history.search({
         text: text,
-        maxResults: 8
+        maxResults: 5
       });
+      
+      console.log('Chrome history results:', results);
       
       return results.map((item, index) => ({
         id: `history-${index}`,
@@ -53,9 +60,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
   // 获取Chrome书签
   const getChromeBookmarks = useCallback(async (text: string): Promise<SuggestionItem[]> => {
-    if (!isExtension) return [];
+    if (!isExtension || !text.trim()) {
+      console.log('Extension not available for bookmarks or empty text');
+      return [];
+    }
     
     try {
+      console.log('Searching Chrome bookmarks for:', text);
       const bookmarkTree = await chrome.bookmarks.getTree();
       const allBookmarks: any[] = [];
       
@@ -76,7 +87,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           bookmark.title?.toLowerCase().includes(text.toLowerCase()) ||
           bookmark.url?.toLowerCase().includes(text.toLowerCase())
         )
-        .slice(0, 5);
+        .slice(0, 3);
+      
+      console.log('Chrome bookmark results:', filtered);
       
       return filtered.map((bookmark, index) => ({
         id: `bookmark-${index}`,
@@ -88,54 +101,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     } catch (error) {
       console.error('Failed to get Chrome bookmarks:', error);
       return [];
-    }
-  }, [isExtension]);
-
-  // 获取本地存储的历史记录（fallback）
-  const getLocalHistory = useCallback((text: string): SuggestionItem[] => {
-    try {
-      const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
-      return history
-        .filter((item: any) => 
-          item.title?.toLowerCase().includes(text.toLowerCase()) ||
-          item.url?.toLowerCase().includes(text.toLowerCase())
-        )
-        .slice(0, 8)
-        .map((item: any, index: number) => ({
-          id: `history-${index}`,
-          title: item.title || item.url,
-          url: item.url,
-          favicon: item.favicon || '🌐',
-          type: 'history' as const
-        }));
-    } catch {
-      return [];
-    }
-  }, []);
-
-  // 保存访问记录到Chrome历史（会自动保存）和本地存储
-  const saveToHistory = useCallback((title: string, url: string) => {
-    if (isExtension) {
-      // Chrome扩展会自动保存到历史记录，无需手动操作
-      chrome.history.addUrl({ url });
-    } else {
-      // Fallback到localStorage
-      try {
-        const history = JSON.parse(localStorage.getItem('browserHistory') || '[]');
-        const newItem = {
-          title,
-          url,
-          favicon: '🌐',
-          timestamp: Date.now()
-        };
-        
-        const filteredHistory = history.filter((item: any) => item.url !== url);
-        const updatedHistory = [newItem, ...filteredHistory].slice(0, 50);
-        
-        localStorage.setItem('browserHistory', JSON.stringify(updatedHistory));
-      } catch (error) {
-        console.log('无法保存到本地历史记录');
-      }
     }
   }, [isExtension]);
 
@@ -169,33 +134,37 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       return;
     }
 
+    console.log('Getting suggestions for:', query);
+
     try {
       let historyResults: SuggestionItem[] = [];
       let bookmarkResults: SuggestionItem[] = [];
       
       if (isExtension) {
-        // 使用Chrome API
+        console.log('Using Chrome API');
         historyResults = await getChromeHistory(query);
         bookmarkResults = await getChromeBookmarks(query);
       } else {
-        // 使用localStorage fallback
-        historyResults = getLocalHistory(query);
+        console.log('Chrome extension not available');
       }
       
-      const allSuggestions = [...historyResults, ...bookmarkResults].slice(0, 8);
+      const allSuggestions = [...historyResults, ...bookmarkResults];
+      console.log('All suggestions:', allSuggestions);
       
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
       setSelectedIndex(-1);
       
       // 应用内联补全
-      applyInlineCompletion(query, allSuggestions);
+      if (allSuggestions.length > 0) {
+        applyInlineCompletion(query, allSuggestions);
+      }
     } catch (error) {
       console.error('获取建议失败:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [isExtension, getChromeHistory, getChromeBookmarks, getLocalHistory, applyInlineCompletion]);
+  }, [isExtension, getChromeHistory, getChromeBookmarks, applyInlineCompletion]);
 
   const debouncedGetSuggestions = useCallback((query: string) => {
     if (debounceRef.current) {
@@ -204,7 +173,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     
     debounceRef.current = setTimeout(() => {
       getSuggestions(query);
-    }, 150);
+    }, 200);
   }, [getSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,10 +186,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   };
 
   const handleCompositionStart = () => {
+    console.log('Composition started');
     setIsComposing(true);
   };
 
   const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    console.log('Composition ended');
     setIsComposing(false);
     const newValue = e.currentTarget.value;
     onChange(newValue);
@@ -280,8 +251,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   };
 
   const handleSuggestionSelect = (suggestion: SuggestionItem) => {
-    saveToHistory(suggestion.title, suggestion.url);
-    
     onChange(suggestion.url);
     setShowSuggestions(false);
     setSuggestions([]);
@@ -311,6 +280,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       }
     };
   }, []);
+
+  // 调试信息
+  useEffect(() => {
+    console.log('Extension available:', isExtension);
+    console.log('Chrome object:', typeof chrome !== 'undefined' ? chrome : 'undefined');
+  }, [isExtension]);
 
   return (
     <div className="relative">
@@ -345,8 +320,6 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
                   <img src={suggestion.favicon} alt="" className="w-4 h-4" onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }} />
-                ) : suggestion.favicon ? (
-                  <span className="text-lg">{suggestion.favicon}</span>
                 ) : (
                   <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
                 )}

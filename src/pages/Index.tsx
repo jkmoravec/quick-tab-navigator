@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ const Index = () => {
     }
   };
 
-  // 处理Kagi Assistant搜索 - 简化版本，不传递profile参数
+  // 处理Kagi Assistant搜索
   const handleKagiSearch = (query: string) => {
     const params = new URLSearchParams({
       q: query,
@@ -84,6 +85,8 @@ const Index = () => {
   // 处理搜索/导航
   const handleSubmit = (value: string) => {
     if (!value.trim()) return;
+
+    console.log('Submitting search with engine:', searchEngine, 'value:', value);
 
     if (isURL(value)) {
       const url = value.startsWith('http') ? value : `https://${value}`;
@@ -101,8 +104,17 @@ const Index = () => {
     }
   };
 
+  // 处理搜索引擎切换
+  const handleSearchEngineChange = (engineId: string) => {
+    console.log('Changing search engine to:', engineId);
+    setSearchEngine(engineId);
+  };
+
   const isKagiSelected = searchEngine === 'kagi-assistant';
   const currentEngine = searchEngines.find(e => e.id === searchEngine);
+
+  console.log('Current search engine:', searchEngine);
+  console.log('Available engines:', searchEngines);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
@@ -115,7 +127,7 @@ const Index = () => {
               <Settings className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800">
+          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 z-50">
             <DropdownMenuItem onClick={() => setShowSettings(true)}>
               搜索引擎设置
             </DropdownMenuItem>
@@ -128,7 +140,7 @@ const Index = () => {
 
       {/* 主搜索区域 */}
       <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
-        {/* 大搜索栏 - 更大更突出的设计 */}
+        {/* 大搜索栏 */}
         <div className="w-full mb-8">
           <div className="relative">
             <AutoComplete
@@ -148,7 +160,7 @@ const Index = () => {
             </Button>
           </div>
           
-          {/* 搜索引擎选择 - 改进版本，支持更多搜索引擎 */}
+          {/* 搜索引擎选择 */}
           <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
             {searchEngines.map((engine) => (
               <Button
@@ -160,7 +172,7 @@ const Index = () => {
                     ? "bg-blue-600 text-white shadow-md" 
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
-                onClick={() => setSearchEngine(engine.id)}
+                onClick={() => handleSearchEngineChange(engine.id)}
               >
                 {engine.name}
                 {engine.isAI && (
