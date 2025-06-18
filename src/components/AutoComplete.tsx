@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -32,15 +31,25 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
   // 获取Chrome浏览器历史记录
   const getChromeHistory = useCallback(async (text: string): Promise<SuggestionItem[]> => {
     if (!isExtension || !text.trim()) {
-      console.log('Extension not available or empty text');
+      console.log('Extension not available or empty text for history');
       return [];
     }
     
     try {
       console.log('Searching Chrome history for:', text);
-      const results = await chrome.history.search({
-        text: text,
-        maxResults: 5
+      
+      // 使用Promise包装chrome.history.search
+      const results = await new Promise<chrome.history.HistoryItem[]>((resolve, reject) => {
+        chrome.history.search({
+          text: text,
+          maxResults: 8
+        }, (results) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(results || []);
+          }
+        });
       });
       
       console.log('Chrome history results:', results);
@@ -67,10 +76,21 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     
     try {
       console.log('Searching Chrome bookmarks for:', text);
-      const bookmarkTree = await chrome.bookmarks.getTree();
-      const allBookmarks: any[] = [];
       
-      const extractBookmarks = (nodes: any[]) => {
+      // 使用Promise包装chrome.bookmarks.getTree
+      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve, reject) => {
+        chrome.bookmarks.getTree((results) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(results || []);
+          }
+        });
+      });
+      
+      const allBookmarks: chrome.bookmarks.BookmarkTreeNode[] = [];
+      
+      const extractBookmarks = (nodes: chrome.bookmarks.BookmarkTreeNode[]) => {
         nodes.forEach(node => {
           if (node.url) {
             allBookmarks.push(node);
@@ -87,14 +107,14 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           bookmark.title?.toLowerCase().includes(text.toLowerCase()) ||
           bookmark.url?.toLowerCase().includes(text.toLowerCase())
         )
-        .slice(0, 3);
+        .slice(0, 5);
       
       console.log('Chrome bookmark results:', filtered);
       
       return filtered.map((bookmark, index) => ({
         id: `bookmark-${index}`,
-        title: bookmark.title || bookmark.url,
-        url: bookmark.url,
+        title: bookmark.title || bookmark.url || '',
+        url: bookmark.url || '',
         favicon: `chrome://favicon/${bookmark.url}`,
         type: 'bookmark' as const
       }));
@@ -134,22 +154,25 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       return;
     }
 
-    console.log('Getting suggestions for:', query);
+    console.log('Getting suggestions for query:', query);
+    console.log('Chrome extension available:', isExtension);
 
     try {
       let historyResults: SuggestionItem[] = [];
       let bookmarkResults: SuggestionItem[] = [];
       
       if (isExtension) {
-        console.log('Using Chrome API');
-        historyResults = await getChromeHistory(query);
-        bookmarkResults = await getChromeBookmarks(query);
+        console.log('Using Chrome API for suggestions');
+        [historyResults, bookmarkResults] = await Promise.all([
+          getChromeHistory(query),
+          getChromeBookmarks(query)
+        ]);
       } else {
-        console.log('Chrome extension not available');
+        console.log('Chrome extension not available, no suggestions');
       }
       
       const allSuggestions = [...historyResults, ...bookmarkResults];
-      console.log('All suggestions:', allSuggestions);
+      console.log('Total suggestions found:', allSuggestions.length);
       
       setSuggestions(allSuggestions);
       setShowSuggestions(allSuggestions.length > 0);
@@ -173,11 +196,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     
     debounceRef.current = setTimeout(() => {
       getSuggestions(query);
-    }, 200);
+    }, 300);
   }, [getSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    console.log('Input changed to:', newValue);
     onChange(newValue);
     
     if (!isComposing) {
@@ -283,8 +307,13 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
 
   // 调试信息
   useEffect(() => {
+    console.log('AutoComplete component mounted');
     console.log('Extension available:', isExtension);
-    console.log('Chrome object:', typeof chrome !== 'undefined' ? chrome : 'undefined');
+    console.log('Chrome object:', typeof chrome !== 'undefined' ? 'available' : 'undefined');
+    if (typeof chrome !== 'undefined') {
+      console.log('Chrome.history:', typeof chrome.history);
+      console.log('Chrome.bookmarks:', typeof chrome.bookmarks);
+    }
   }, [isExtension]);
 
   return (
