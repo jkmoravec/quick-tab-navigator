@@ -44,7 +44,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           text: text,
           maxResults: 8
         }, (results) => {
-          if (chrome.runtime && chrome.runtime.lastError) {
+          if (chrome.runtime?.lastError) {
             reject(chrome.runtime.lastError);
           } else {
             resolve(results || []);
@@ -79,7 +79,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       
       const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve, reject) => {
         chrome.bookmarks.getTree((results) => {
-          if (chrome.runtime && chrome.runtime.lastError) {
+          if (chrome.runtime?.lastError) {
             reject(chrome.runtime.lastError);
           } else {
             resolve(results || []);
