@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,22 +33,75 @@ const Index = () => {
   const [showQuickLinksConfig, setShowQuickLinksConfig] = useState(false);
 
   // 默认搜索引擎（包含Kagi Assistant）
-  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>([
+  const defaultSearchEngines: SearchEngine[] = [
     { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
     { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
     { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
     { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
     { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
-  ]);
+  ];
 
-  // 自定义快速链接
-  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
-
-  // 初始化搜索引擎为默认引擎
-  const [searchEngine, setSearchEngine] = useState(() => {
-    const defaultEngine = searchEngines.find(e => e.isDefault);
-    return defaultEngine ? defaultEngine.id : "google";
+  // 从 localStorage 加载搜索引擎配置
+  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => {
+    try {
+      const saved = localStorage.getItem('searchEngines');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // 确保 Kagi Assistant 存在
+        const hasKagiAssistant = parsed.some((engine: SearchEngine) => engine.id === 'kagi-assistant');
+        if (!hasKagiAssistant) {
+          const kagiAssistant = defaultSearchEngines.find(e => e.id === 'kagi-assistant');
+          if (kagiAssistant) {
+            parsed.push(kagiAssistant);
+          }
+        }
+        return parsed;
+      }
+      return defaultSearchEngines;
+    } catch {
+      return defaultSearchEngines;
+    }
   });
+
+  // 从 localStorage 加载快速链接配置
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>(() => {
+    try {
+      const saved = localStorage.getItem('quickLinks');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 从 localStorage 加载当前选中的搜索引擎
+  const [searchEngine, setSearchEngine] = useState(() => {
+    try {
+      const saved = localStorage.getItem('currentSearchEngine');
+      if (saved) {
+        return saved;
+      }
+      const defaultEngine = searchEngines.find(e => e.isDefault);
+      return defaultEngine ? defaultEngine.id : "google";
+    } catch {
+      const defaultEngine = searchEngines.find(e => e.isDefault);
+      return defaultEngine ? defaultEngine.id : "google";
+    }
+  });
+
+  // 保存搜索引擎配置到 localStorage
+  useEffect(() => {
+    localStorage.setItem('searchEngines', JSON.stringify(searchEngines));
+  }, [searchEngines]);
+
+  // 保存快速链接配置到 localStorage
+  useEffect(() => {
+    localStorage.setItem('quickLinks', JSON.stringify(quickLinks));
+  }, [quickLinks]);
+
+  // 保存当前选中的搜索引擎到 localStorage
+  useEffect(() => {
+    localStorage.setItem('currentSearchEngine', searchEngine);
+  }, [searchEngine]);
 
   // 判断是否为URL
   const isURL = (text: string) => {
