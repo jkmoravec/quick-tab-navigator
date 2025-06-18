@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -39,16 +38,12 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       console.log('Searching Chrome history for:', text);
       
-      const results = await new Promise<chrome.history.HistoryItem[]>((resolve, reject) => {
+      const results = await new Promise<chrome.history.HistoryItem[]>((resolve) => {
         chrome.history.search({
           text: text,
           maxResults: 8
         }, (results) => {
-          if (chrome.runtime && chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(results || []);
-          }
+          resolve(results || []);
         });
       });
       
@@ -77,13 +72,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       console.log('Searching Chrome bookmarks for:', text);
       
-      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve, reject) => {
+      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve) => {
         chrome.bookmarks.getTree((results) => {
-          if (chrome.runtime && chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(results || []);
-          }
+          resolve(results || []);
         });
       });
       
