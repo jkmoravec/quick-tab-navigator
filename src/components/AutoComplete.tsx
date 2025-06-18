@@ -38,18 +38,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       console.log('Searching Chrome history for:', text);
       
-      const results = await new Promise<chrome.history.HistoryItem[]>((resolve, reject) => {
-        chrome.history.search({
-          text: text,
-          maxResults: 8
-        }, (results) => {
-          const lastError = (chrome as any).runtime?.lastError;
-          if (lastError) {
-            reject(lastError);
-          } else {
-            resolve(results || []);
-          }
-        });
+      const results = await chrome.history.search({
+        text: text,
+        maxResults: 8
       });
       
       console.log('Chrome history results:', results);
@@ -77,16 +68,7 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
     try {
       console.log('Searching Chrome bookmarks for:', text);
       
-      const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve, reject) => {
-        chrome.bookmarks.getTree((results) => {
-          const lastError = (chrome as any).runtime?.lastError;
-          if (lastError) {
-            reject(lastError);
-          } else {
-            resolve(results || []);
-          }
-        });
-      });
+      const bookmarkTree = await chrome.bookmarks.getTree();
       
       const allBookmarks: chrome.bookmarks.BookmarkTreeNode[] = [];
       
