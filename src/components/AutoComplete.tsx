@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface SuggestionItem {
@@ -44,8 +43,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
           text: text,
           maxResults: 8
         }, (results) => {
-          if (chrome.runtime?.lastError) {
-            reject(chrome.runtime.lastError);
+          const lastError = (chrome as any).runtime?.lastError;
+          if (lastError) {
+            reject(lastError);
           } else {
             resolve(results || []);
           }
@@ -79,8 +79,9 @@ const AutoComplete = ({ value, onChange, onSubmit, placeholder, className }: Aut
       
       const bookmarkTree = await new Promise<chrome.bookmarks.BookmarkTreeNode[]>((resolve, reject) => {
         chrome.bookmarks.getTree((results) => {
-          if (chrome.runtime?.lastError) {
-            reject(chrome.runtime.lastError);
+          const lastError = (chrome as any).runtime?.lastError;
+          if (lastError) {
+            reject(lastError);
           } else {
             resolve(results || []);
           }
