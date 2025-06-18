@@ -159,23 +159,19 @@ const Index = () => {
             </Button>
           </div>
           
-          {/* 搜索引擎选择 - 修复点击处理 */}
+          {/* 搜索引擎选择 - 使用原生按钮确保点击工作 */}
           <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
             {searchEngines.map((engine) => (
               <button
                 key={engine.id}
                 type="button"
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer ${
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${
                   searchEngine === engine.id 
                     ? "bg-blue-600 text-white shadow-md" 
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 bg-transparent"
                 }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Button clicked for engine:', engine.id);
-                  handleSearchEngineChange(engine.id);
-                }}
+                onClick={() => handleSearchEngineChange(engine.id)}
+                onMouseDown={(e) => e.preventDefault()}
               >
                 {engine.name}
                 {engine.isAI && (
