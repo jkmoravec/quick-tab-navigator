@@ -45,21 +45,11 @@ const Index = () => {
   // 自定义快速链接
   const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
 
-  // 获取当前默认搜索引擎ID
-  const getDefaultSearchEngine = () => {
+  // 初始化搜索引擎为默认引擎
+  const [searchEngine, setSearchEngine] = useState(() => {
     const defaultEngine = searchEngines.find(e => e.isDefault);
     return defaultEngine ? defaultEngine.id : "google";
-  };
-
-  const [searchEngine, setSearchEngine] = useState(getDefaultSearchEngine());
-
-  // 当搜索引擎列表变化时，更新当前选中的搜索引擎
-  useEffect(() => {
-    const defaultEngine = searchEngines.find(e => e.isDefault);
-    if (defaultEngine && searchEngine !== defaultEngine.id) {
-      setSearchEngine(defaultEngine.id);
-    }
-  }, [searchEngines, searchEngine]);
+  });
 
   // 判断是否为URL
   const isURL = (text: string) => {
@@ -104,16 +94,13 @@ const Index = () => {
     }
   };
 
-  // 修复搜索引擎切换
+  // 修复搜索引擎切换 - 移除问题的useEffect
   const handleSearchEngineChange = (engineId: string) => {
-    console.log('Changing search engine from', searchEngine, 'to', engineId);
+    console.log('Changing search engine to:', engineId);
     setSearchEngine(engineId);
   };
 
   const isKagiSelected = searchEngine === 'kagi-assistant';
-
-  console.log('Current search engine state:', searchEngine);
-  console.log('Available engines:', searchEngines.map(e => e.id));
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
