@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, X, GripVertical } from "lucide-react";
+import { Trash2, Plus, X, GripVertical, RotateCcw } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -111,6 +110,10 @@ const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigPro
     onLinksChange(links.filter(link => link.id !== id));
   };
 
+  const resetToDefault = () => {
+    onLinksChange([]);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -126,9 +129,17 @@ const QuickLinksConfig = ({ links, onLinksChange, onClose }: QuickLinksConfigPro
     <Card className="border-0 shadow-none">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>快速链接配置</CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {links.length > 0 && (
+            <Button variant="outline" size="sm" onClick={resetToDefault}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              清空所有
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有快速链接列表 */}

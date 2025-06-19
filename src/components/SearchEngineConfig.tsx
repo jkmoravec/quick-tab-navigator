@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, X, Bot, GripVertical } from "lucide-react";
+import { Trash2, Plus, X, Bot, GripVertical, RotateCcw } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -125,6 +124,15 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
     })
   );
 
+  // 默认搜索引擎配置
+  const defaultEngines: SearchEngine[] = [
+    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
+    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
+    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
+    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
+    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
+  ];
+
   const addEngine = () => {
     if (newEngine.name && newEngine.url) {
       const id = newEngine.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
@@ -148,6 +156,10 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
     })));
   };
 
+  const resetToDefault = () => {
+    onEnginesChange(defaultEngines);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -163,9 +175,15 @@ const SearchEngineConfig = ({ engines, onEnginesChange, onClose }: SearchEngineC
     <Card className="border-0 shadow-none">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>搜索引擎配置</CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={resetToDefault}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            重置默认
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 现有搜索引擎列表 */}
