@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,7 @@ const Index = () => {
     });
     
     const url = `https://kagi.com/assistant?${params.toString()}`;
-    window.open(url, '_blank');
+    window.location.href = url;
   };
 
   // 处理搜索/导航
@@ -132,7 +133,7 @@ const Index = () => {
 
     if (isURL(value)) {
       const url = value.startsWith('http') ? value : `https://${value}`;
-      window.open(url, '_blank');
+      window.location.href = url;
     } else {
       const engine = searchEngines.find(e => e.id === searchEngine);
       if (engine) {
@@ -140,7 +141,7 @@ const Index = () => {
           handleKagiSearch(value);
         } else {
           const searchUrl = engine.url + encodeURIComponent(value);
-          window.open(searchUrl, '_blank');
+          window.location.href = searchUrl;
         }
       }
     }
@@ -229,7 +230,7 @@ const Index = () => {
                 key={link.id}
                 variant="ghost"
                 className="h-16 rounded-xl bg-gray-100/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                onClick={() => window.open(link.url, '_blank')}
+                onClick={() => window.location.href = link.url}
               >
                 <div className="text-center">
                   {link.icon && <div className="text-2xl mb-1">{link.icon}</div>}
