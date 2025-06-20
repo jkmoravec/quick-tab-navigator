@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ interface SearchEngine {
   url: string;
   isDefault?: boolean;
   isAI?: boolean;
+  enabled?: boolean;
 }
 
 interface QuickLink {
@@ -35,11 +35,11 @@ const Index = () => {
 
   // 默认搜索引擎（包含Kagi Assistant）
   const defaultSearchEngines: SearchEngine[] = [
-    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true },
-    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=" },
-    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=" },
-    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
-    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true }
+    { id: "google", name: "Google", url: "https://www.google.com/search?q=", isDefault: true, enabled: true },
+    { id: "bing", name: "Bing", url: "https://www.bing.com/search?q=", enabled: true },
+    { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=", enabled: true },
+    { id: "duckduckgo", name: "DuckDuckGo", url: "https://duckduckgo.com/?q=", enabled: true },
+    { id: "kagi-assistant", name: "Kagi Assistant", url: "https://kagi.com/assistant", isAI: true, enabled: true }
   ];
 
   // 从 localStorage 加载搜索引擎配置
@@ -88,6 +88,9 @@ const Index = () => {
       return defaultEngine ? defaultEngine.id : "google";
     }
   });
+
+  // 过滤出已启用的搜索引擎
+  const enabledSearchEngines = searchEngines.filter(engine => engine.enabled !== false);
 
   // 保存搜索引擎配置到 localStorage
   useEffect(() => {
@@ -156,21 +159,21 @@ const Index = () => {
   const isKagiSelected = searchEngine === 'kagi-assistant';
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-4 transition-colors">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex flex-col items-center justify-center p-4 transition-colors">
       {/* 设置和主题切换按钮 */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
         <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+            <Button variant="ghost" size="icon" className="text-gray-400 dark:text-gray-400 hover:text-gray-200 dark:hover:text-gray-200">
               <Settings className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 z-50">
-            <DropdownMenuItem onClick={() => setShowSettings(true)}>
+          <DropdownMenuContent align="end" className="bg-gray-800 dark:bg-gray-800 border-gray-700 z-50">
+            <DropdownMenuItem onClick={() => setShowSettings(true)} className="text-gray-200 hover:bg-gray-700">
               搜索引擎设置
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)}>
+            <DropdownMenuItem onClick={() => setShowQuickLinksConfig(true)} className="text-gray-200 hover:bg-gray-700">
               快速链接设置
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -187,7 +190,7 @@ const Index = () => {
               onChange={setQuery}
               onSubmit={handleSubmit}
               placeholder={isKagiSelected ? "向 Kagi Assistant 提问..." : "输入网址或搜索关键词..."}
-              className="w-full h-16 text-xl px-8 pr-32 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-300 shadow-xl hover:shadow-2xl focus:shadow-2xl"
+              className="w-full h-16 text-xl px-8 pr-32 rounded-full bg-gray-800/80 dark:bg-gray-800/80 border-2 border-gray-700 dark:border-gray-700 text-white dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400 focus:border-blue-500 focus:outline-none transition-all duration-300 shadow-xl hover:shadow-2xl focus:shadow-2xl backdrop-blur-sm"
             />
             
             {/* 搜索按钮在输入框内 */}
@@ -199,16 +202,16 @@ const Index = () => {
             </Button>
           </div>
           
-          {/* 搜索引擎选择 - 使用原生按钮确保点击工作 */}
+          {/* 搜索引擎选择 - 只显示已启用的搜索引擎 */}
           <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-            {searchEngines.map((engine) => (
+            {enabledSearchEngines.map((engine) => (
               <button
                 key={engine.id}
                 type="button"
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none border-0 outline-none focus:outline-none ${
                   searchEngine === engine.id 
                     ? "bg-blue-600 text-white shadow-md" 
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 bg-transparent"
+                    : "text-gray-300 dark:text-gray-300 hover:bg-gray-700/50 dark:hover:bg-gray-700/50 bg-transparent"
                 }`}
                 onClick={() => handleSearchEngineChange(engine.id)}
                 onMouseDown={(e) => e.preventDefault()}
@@ -229,7 +232,7 @@ const Index = () => {
               <Button
                 key={link.id}
                 variant="ghost"
-                className="h-16 rounded-xl bg-gray-100/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                className="h-16 rounded-xl bg-gray-800/50 dark:bg-gray-800/50 border border-gray-700 dark:border-gray-700 hover:bg-gray-700/50 dark:hover:bg-gray-700/50 text-white dark:text-white transition-colors backdrop-blur-sm"
                 onClick={() => window.location.href = link.url}
               >
                 <div className="text-center">
@@ -245,7 +248,7 @@ const Index = () => {
       {/* 设置弹窗 */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+          <div className="bg-gray-800 dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <SearchEngineConfig 
               engines={searchEngines}
               onEnginesChange={setSearchEngines}
@@ -258,7 +261,7 @@ const Index = () => {
       {/* 快速链接配置弹窗 */}
       {showQuickLinksConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+          <div className="bg-gray-800 dark:bg-gray-800 rounded-lg p-1 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <QuickLinksConfig 
               links={quickLinks}
               onLinksChange={setQuickLinks}
